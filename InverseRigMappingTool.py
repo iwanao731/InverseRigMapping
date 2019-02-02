@@ -14,14 +14,14 @@ def GetJointNames():
 def ConstructPositionHash(bones):
 
     positions = []
-    val = 1
+#    val = 1
     for bone in bones:
         vec = cmds.xform(bone, q=True, ws=True, t=True)
         #print "[%d] %s: %f %f %f" %(val, bone, vec[0], vec[1], vec[2])
         positions.append(vec[0])
         positions.append(vec[1])
         positions.append(vec[2])
-        val = val + 1
+ #       val = val + 1
 
     return positions
 
@@ -304,6 +304,36 @@ def RigComponentEditor(*args):
         )
 
     cmds.showWindow( window )
+
+def printTranslate():    
+    print "printTranslate"
+
+def printRotate():
+    print "printRotate"
+
+listJobID = []
+
+def enableScriptJobs():
+    
+    # select all joint name
+    select_names = GetJointNames()    
+
+    for name in select_names:
+        jobID1 = cmds.scriptJob( attributeChange=[name + '.translate', printTranslate] )    
+        jobID2 = cmds.scriptJob( attributeChange=[name + '.rotate', printRotate] )
+        listJobID.append(jobID1)
+        listJobID.append(jobID2)
+
+    print len(listJobID)
+
+def disableScriptJobs():
+    
+    for id in listJobID:
+        cmds.scriptJob(kill=id,force=True)
+
+    #remove all job id    
+    del listJobID [:]
+    print len(listJobID)    
 
 def InverseRigMapTool():
     # GUI Interface

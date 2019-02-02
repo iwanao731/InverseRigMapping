@@ -35,6 +35,28 @@ def loadJointData(o_file):
 
     return arr
     
+
+def loadJointData2(o_file):
+
+    # Load csv file
+    reader = csv.reader(file(o_file, 'r'))
+
+    # skip first row line
+    header = next(reader)
+
+    arr = np.empty((0,3), dtype = np.float64)
+
+    # Show each attribute
+    for row in reader:
+        jointName = row[1]
+        vec = cmds.xform(jointName, q=True, ws=True, t=True)
+        translateX = np.float64(vec[0])
+        translateY = np.float64(vec[1])
+        translateZ = np.float64(vec[2])
+        arr = np.append(arr, np.array([[translateX,translateY,translateZ]]), axis=0)
+
+    return arr
+    
 def loadRigData():
 
     # load first rig data
@@ -129,7 +151,9 @@ def computeKast():
     Kast = np.empty((1,n), dtype = np.float64)
 
     # Input arbitrary joint positions (TBD)lo
-    a = loadJointData(defineXFilePath(targetFileNo))
+    #a = loadJointData(defineXFilePath(targetFileNo))
+    
+    a = loadJointData2(defineXFilePath(targetFileNo))
    
     for i in range(n):
         b = loadJointData(defineXFilePath(i))
@@ -211,15 +235,17 @@ def saveFileDialog():
     
 def setParam(allY):
     
-    dialog = cmds.fileDialog(m=1);
-    o_file = str(dialog)
+#----------------------------------
+#    dialog = cmds.fileDialog(m=1);
+#    o_file = str(dialog)
 
-    if not (cmds.file(o_file,query=True, exists=True)):
-        tmp_csv_file = open(o_file, 'w' ,os.O_CREAT)
-    else:
-        tmp_csv_file = open(o_file, 'w')
+#    if not (cmds.file(o_file,query=True, exists=True)):
+#        tmp_csv_file = open(o_file, 'w' ,os.O_CREAT)
+#    else:
+#        tmp_csv_file = open(o_file, 'w')
     
-    writer = csv.writer(tmp_csv_file, lineterminator='\n')
+#    writer = csv.writer(tmp_csv_file, lineterminator='\n')
+#----------------------------------
     
     # intialize
     i = 0
@@ -241,21 +267,34 @@ def setParam(allY):
 
         # compute main
         Yi = pre.dot(constructY(allY, i))
-        
-        # save file
+
+        # set parameter
         for k in range(Yi.size):
-            row[3 + k * 2  + 1] = Yi[0, k]
+            ctrlName = row[1] + "." + row[3 + k * 2]
+            settable = cmds.getAttr(ctrlName, settable = True)
+            lockable = cmds.getAttr(ctrlName, lock = True)
+            if(settable == True and lockable == False):
+                cmds.setAttr(ctrlName, Yi[0, k])        
+
+        # save file
+        #for k in range(Yi.size):
+        #    row[3 + k * 2  + 1] = Yi[0, k]
+        
+        #writer.writerow(row)
 
         #rowList.append(row)    
-        writer.writerow(row)
             
         i = i + 1
             
 def computeGPR():
 
-    pre = computePreGPR()
-    allY = loadRigData2()
-    setParam(allY)
+    #pre = computePreGPR()
     
+    # load training data
+    allY = loadRigData2()    
+
+    # estimate rig paramters
+    setParam(allY)    
 
 computeGPR()
+
